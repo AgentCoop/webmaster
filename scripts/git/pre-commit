@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+##
+## Pre-commit hook for running PHP unit tests
+##
+
 source ./scripts/config_vars.sh
 source ./scripts/utils/index.sh
 
@@ -11,7 +15,7 @@ if [[ $branch_name != "master" ]] && [[ $branch_name != "staging" ]]; then
 fi
 
 if [[ -z $cont_id ]]; then
-	error "Test units execution requires the project to be running"
+	error "Unit tests execution requires the project to be running"
 fi
 
 docker exec $cont_id [[ -f ./phpunit.xml ]]
@@ -24,5 +28,5 @@ fi
 docker exec $cont_id phpunit >/dev/null
 
 if [[ $? != 0 ]]; then
-	error "Test units execution has been failed, aborting the commit"
+	error "Unit tests execution has been failed, aborting the commit"
 fi

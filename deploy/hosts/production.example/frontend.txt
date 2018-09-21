@@ -1,0 +1,1 @@
+root@<ip_addr> ssh_key

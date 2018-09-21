@@ -1,1 +1,4 @@
 .idea
+/deploy/subsystem/
+!/deploy/hosts/*.example
+config_vars.sh

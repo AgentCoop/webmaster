@@ -4,8 +4,8 @@
 ## Pre-commit hook for running PHP unit tests
 ##
 
-source ./scripts/config_vars.sh
-source ./scripts/utils/index.sh
+source ./webmaster/scripts/config_vars.sh
+source ./webmaster/scripts/utils/index.sh
 
 branch_name=$(git_getCurrentBranchName)
 cont_id=$(docker ps -f "name=$APP_PHP_CONT_NAME" --format '{{.ID}}')

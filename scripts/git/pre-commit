@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+source ./scripts/config_vars.sh
+source ./scripts/utils/index.sh
+
+BRANCH_NAME=$(git_getCurrentBranchName)
+CONT_ID=$(docker ps -f "name=$APP_PHP_CONT_NAME" --format '{{.ID}}')
+
+if [[ $BRANCH_NAME != "master" ]] && [[ $BRANCH_NAME != "staging" ]]; then
+	exit 0;
+fi
+
+if [[ -z $CONT_ID ]]; then
+	error "Test units execution requires the project to be running"
+fi
+
+docker exec $CONT_ID phpunit >/dev/null
+
+if [[ $? != 0 ]]; then
+	error "Test units execution has been failed, aborting the commit"
+fi

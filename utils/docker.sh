@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+docker_getDefaultImageContainerName() {
+    echo "$SERVICE_NAME.$SUBSYSTEM.$APP_NAME"
+}
+
 docker_getContIdByName() {
     local cont_name="$1"
     $(docker ps -f "name=$cont_name" --format '{{.ID}}')
@@ -11,13 +15,13 @@ docker_buildImage() {
     local dockerfile=${3:-Dockerfile}
 
     if [[ ! -f $dockerfile ]]; then
-        error "Dockerfile does not exist, $dockerfile"
+        error "dockerfile does not exist, $dockerfile"
     fi
 
     [[ ! -d ./builds ]] && mkdir ./builds
 
     local image_tag="$image_name":"latest"
-    local image_archive="$imag_name".tar
+    local image_archive="$image_name".tar
 
     docker build \
         -f "$dockerfile" \
@@ -69,15 +73,6 @@ docker_syncImage() {
     local ssh_key="$2"
     local image_name="$3"
 
-    long_process_start "Uploading Docker image $image_name to the target host $remote_host"
-        reload_image "$remote_host" "$ssh_key" "$image_name"
-    long_process_end
-}
-
-docker_syncAllImages() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
     # Just to be sure that all directories, which are about to be mounted by containers, exist
     ( ssh -T "$remote_host" -i "$ssh_key" <<EOF
         mkdir -p $WEB_ROOT
@@ -85,121 +80,44 @@ docker_syncAllImages() {
 EOF
     ) > /dev/null
 
-    if [[ $NGINX_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$NGINX_IMAGE_NAME"
-    fi
-
-    if [[ $PHP_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$PHP_IMAGE_NAME"
-    fi
-
-    if [[ $POSTGRESQL_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$POSTGRESQL_IMAGE_NAME"
-    fi
-
-    if [[ $REDIS_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$REDIS_IMAGE_NAME"
-    fi
-
-    if [[ $ELASTICSEARCH_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$ELASTICSEARCH_IMAGE_NAME"
-    fi
-
-    if [[ $MONGODB_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$MONGODB_IMAGE_NAME"
-    fi
-
-    if [[ $NODEJS_SERVICE = true ]]; then
-        docker_syncImage "$remote_host" "$ssh_key" "$NODEJS_IMAGE_NAME"
-    fi
+    long_process_start "Uploading Docker image [ $image_name ] to the target host $remote_host"
+        docker_reloadImage "$remote_host" "$ssh_key" "$image_name"
+    long_process_end
 }
 
 docker_build() {
     local release_target="$1"
 
-    if [[ $POSTGRESQL_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/postgresql/$release_target/."
-
-        long_process_start "Building $POSTGRES_IMAGE_NAME image"
-            build_image "$context" \
-                "$POSTGRESQL_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
+    if [[ ! -z $CONTEXT_DIR ]]; then
+        local context_dir="$CONTEXT_DIR/."
+        local dockerfile="$DOCKER_DIR/$SERVICE_NAME/$release_target/Dockerfile"
+    else
+        local context_dir="$DOCKER_DIR/$SERVICE_NAME/$release_target/."
+        local dockerfile="$DOCKER_DIR/$SERVICE_NAME/$release_target/Dockerfile"
     fi
 
-    if [[ $REDIS_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/redis/$release_target/."
+    local image_name=$(docker_getDefaultImageContainerName)
 
-        long_process_start "Building $REDIS_IMAGE_NAME image"
-            build_image "$context" \
-                "$REDIS_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
-    fi
-
-    if [[ $PHP_SERVICE = true ]]; then
-        local context="$SOURCE_DIR/."
-
-        long_process_start "Building $PHP_IMAGE_NAME image"
-            build_image "$context" \
-                "$PHP_IMAGE_NAME" \
-                "$DOCKER_DIR/php/$release_target/Dockerfile"
-        long_process_end
-    fi
-
-    if [[ $NGINX_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/nginx/$release_target/."
-
-        long_process_start "Building $NGINX_IMAGE_NAME image"
-            build_image "$context" \
-                "$NGINX_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
-    fi
-
-    if [[ $ELASTICSEARCH_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/elastic/$release_target/."
-
-        long_process_start "Building $ELASTIC_IMAGE_NAME image"
-            build_image "$context" \
-                "$ELASTIC_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
-    fi
-
-    if [[ $NODEJS_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/nodejs/$release_target/."
-
-        long_process_start "Building $NODEJS_IMAGE_NAME image"
-            build_image "$SOURCE_DIR/." \
-                "$NODEJS_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
-    fi
-
-    if [[ $MONGODB_SERVICE = true ]]; then
-        local context="$DOCKER_DIR/mongodb/$release_target"
-
-        long_process_start "Building $MONGODB_IMAGE_NAME image"
-            build_image "$context/." \
-                "$MONGODB_IMAGE_NAME" \
-                "$context/Dockerfile"
-        long_process_end
-    fi
+    long_process_start "Building [ $image_name ] image"
+        docker_buildImage "$context_dir" \
+            "$image_name" \
+            "$dockerfile"
+    long_process_end
 }
 
 docker_startNginx() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name=$(docker_getDefaultImageContainerName)
 
-    long_process_start "Starting $NGINX_CONTAINER container on the host $remote_host"
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p 443:443 -p 80:80 --name=$NGINX_CONTAINER \
+    long_process_start "Starting [ $name ] container on the host $remote_host"
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p 443:443 -p 80:80 --name=$name \
             -v /etc/letsencrypt:/etc/letsencrypt \
             -v $WEB_ROOT/releases/current:/var/www/html \
             $NGINX_MOUNTS \
             -e CERTBOT_DOMAINS="$BASE_URL" \
             --network=$SUBSYSTEM-net \
-            $NGINX_IMAGE_NAME:latest"
+            $name:latest"
         ) > /dev/null
     long_process_end
 }
@@ -207,17 +125,21 @@ docker_startNginx() {
 docker_stopNginx() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name=$(docker_getDefaultImageContainerName)
 
-    long_process_start "Stopping and removing $NGINX_CONTAINER container on $remote_host"
-        ( stop_container "$remote_host" "$ssh_key" "$NGINX_CONTAINER" ) > /dev/null
+    long_process_start "Stopping and removing $name container on $remote_host"
+        (
+            stop_container "$remote_host" "$ssh_key" "$name"
+        ) > /dev/null
     long_process_end
 }
 
-restart_nginx() {
+docker_restartNginx() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name=$(docker_getDefaultImageContainerName)
 
-    long_process_start "Restarting $NGINX_CONTAINER container on $remote_host"
+    long_process_start "Restarting [ $name ] container on $remote_host"
         (
             stop_nginx "$remote_host" "$ssh_key"
             start_nginx "$remote_host" "$ssh_key"
@@ -225,39 +147,44 @@ restart_nginx() {
     long_process_end
 }
 
-start_postgres() {
+docker_startPostgreSql() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name="$3"
 
-    long_process_start "Starting $POSTGRES_CONTAINER container on the host $remote_host"
-        ssh -T "$remote_host" -i "$ssh_key" "docker run -d --name=$POSTGRES_CONTAINER \
+    long_process_start "Starting [ $name ] container on the host $remote_host"
+        ssh -T "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
             --network=$SUBSYSTEM-net \
             -e POSTGRES_DB=$POSTGRES_DB \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=root \
             -v $DATA_ROOT/postgres:/var/lib/postgresql/data \
-            $POSTGRES_IMAGE_NAME:latest"
+            $name:latest"
     long_process_end
 }
 
-stop_postgres() {
+docker_stopPostgreSql() {
     local remote_host="$1"
     local ssh_key="$2"
+    local cont_name="$3"
 
-    long_process_start "Stopping and removing $POSTGRES_CONTAINER container on the host $remote_host"
-        ( stop_container "$remote_host" "$ssh_key" "$POSTGRES_CONTAINER" ) > /dev/null
-    long_process_end
-}
-
-restart_postgres() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $POSTGRES_CONTAINER container on the host $remote_host"
+    long_process_start "Stopping and removing [ $cont_name ] container on the host $remote_host"
         (
-            stop_postgres "$remote_host" "$ssh_key" "$POSTGRES_CONTAINER"
-            start_postgres "$remote_host" "$ssh_key" "$POSTGRES_CONTAINER"
+            stop_container "$remote_host" "$ssh_key" "$cont_name"
+        ) > /dev/null
+    long_process_end
+}
+
+docker_restartPostgreSql() {
+    local remote_host="$1"
+    local ssh_key="$2"
+    local name=$(docker_getDefaultImageContainerName)
+
+    long_process_start "Restarting [ $name ] container on the host $remote_host"
+        (
+            stop_postgresql "$remote_host" "$ssh_key" "$name"
+            start_postgresql "$remote_host" "$ssh_key" "$name"
         ) > /dev/null
     long_process_end
 }

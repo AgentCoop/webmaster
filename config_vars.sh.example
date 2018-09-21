@@ -1,24 +1,10 @@
 
-APP_PHP_CONT_NAME=
+# Application name, required
+APP_NAME=
 
 WEB_ROOT=
+
 DATA_ROOT=
 
 DOCKER_STOP_CONTAINER_TIMEOUT=2
 DOCKER_RESTART_CONTAINER_TIMEOUT=30
-
-##
-## These variables must be assigned per subsystem basis. Assign values to them in ./deploy/subsystem/ files.
-##
-
-# Path to the dir with dockerfile
-DOCKER_DIR=./src/backend/config/docker
-SOURCE_DIR=./src/backend
-
-NGINX_IMAGE_NAME=
-PHP_IMAGE_NAME=
-POSTGRESQL_IMAGE_NAME=
-REDIS_IMAGE_NAME=
-ELASTICSEARCH_IMAGE_NAME=
-MONGODB_IMAGE_NAME=
-NODEJS_IMAGE_NAME=

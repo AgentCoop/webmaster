@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
 source "$ROOT_DIR/utils/index.sh"
+source "$ROOT_DIR/../deploy/config_vars.sh"
 
 declare -a SUBSYSTEMS
 
 args=$(getopt --long host:,subsystem: -o "h:s:" -- "$@")
 
-SUBSYSTEMS=($(find "$ROOT_DIR/deploy/subsystem/" -type f  -exec basename {} .sh \;))
+SERVICE_NAME=
+SUPPORTED_SERVICES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
+SUBSYSTEMS=($(find "$ROOT_DIR/../deploy/subsystem/" -type f  -exec basename {} .sh \;))
 
 case "$(git_getCurrentBranchName)" in
     staging)
@@ -16,7 +19,7 @@ case "$(git_getCurrentBranchName)" in
         RELEASE_TARGET=production
     ;;
     *)
-        error "switch to the right branch to specify the release target!"
+        error "switch to the right branch to specify the release target"
     ;;
 esac
 
@@ -26,10 +29,10 @@ load_subsystem_def() {
     contains "$SUBSYSTEM" "${SUBSYSTEMS[@]}"
 
     if [[ $? != 0 ]]; then
-        error "wrong subsystem name "$SUBSYSTEM" has been specified!"
+        error "wrong subsystem name "$SUBSYSTEM" has been specified"
     fi
 
-    source "$ROOT_DIR/deploy/subsystem/$SUBSYSTEM.sh"
+    source "$ROOT_DIR/../deploy/subsystem/$SUBSYSTEM.sh"
 }
 
 while [ $# -ge 1 ]; do
@@ -43,6 +46,13 @@ while [ $# -ge 1 ]; do
             load_subsystem_def "$2"
         ;;
         -s)
+            SERVICE_NAME="$2"
+            contains "$SERVICE_NAME" "${SUPPORTED_SERVICES[@]}"
+
+            if [[ $? != 0 ]]; then
+                error "unsupported service $SERVICE_NAME"
+            fi
+
             case "$2" in
                 nginx)
                     NGINX_SERVICE=true
@@ -66,7 +76,7 @@ while [ $# -ge 1 ]; do
                     ELASTICSEARCH_SERVICE=true
                 ;;
                 *)
-                    error "Invalid service name $2"
+                    error "unsupported service $2"
                 ;;
             esac
         ;;
@@ -74,3 +84,7 @@ while [ $# -ge 1 ]; do
 
     shift
 done
+
+if [[ -z $SUBSYSTEM ]]; then
+    error "application subsystem must be specified, --subsystem <NAME>"
+fi

@@ -6,7 +6,8 @@ docker_getDefaultImageContainerName() {
 
 docker_getContIdByName() {
     local cont_name="$1"
-    $(docker ps -f "name=$cont_name" --format '{{.ID}}')
+
+    echo $(docker ps -f "name=$cont_name" --format '{{.ID}}')
 }
 
 docker_buildImage() {

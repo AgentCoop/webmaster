@@ -11,18 +11,6 @@ fi
 
 POSTGRES_DB=trans_ru_db
 
-POSTGRES_CONTAINER="postgresql.api.myapp"
-REDIS_CONTAINER="redis.api.myapp"
-PHP_CONTAINER="php.api.myapp"
-NGINX_CONTAINER="nginx.api.myapp"
-ELASTICSEARCH_CONTAINER="elasticsearch.api.myapp"
-
-POSTGRES_IMAGE_NAME="postgresql.api.myapp"
-REDIS_IMAGE_NAME="redis.api.myapp"
-PHP_IMAGE_NAME="php.api.myapp"
-NGINX_IMAGE_NAME="nginx.api.myapp"
-ELASTICSEARCH_IMAGE_NAME="elasticsearch.api.myapp"
-
 NGINX_MOUNTS="\
         --mount type=bind,source=$DATA_ROOT/app/public,target=/var/www/html/public/storage \
 "
@@ -35,10 +23,10 @@ sync-code-base() {
     local T=./builds/tmp
     local DOCKER_CONFIG=./builds/tmp/config/docker
 
-    contId=$(docker ps | awk '$2 ~ /transru_php/ {print $1}')
+    contId=$(docker_getContIdByName "$APP_PHP_CONTAINER_NAME")
 
     if [[ -z $contId ]]; then
-        error "Application must be running during the deployment!"
+        error "application must be running during the deployment"
     fi
 
     mkdir -p ./builds/tmp
@@ -47,6 +35,11 @@ sync-code-base() {
     rm -rf ./builds/tmp/*
 
     if [[ ! -f ./builds/tarballs/$archive ]]; then
+        long_process_start "Installing composers package for $RELEASE_TARGET"
+            docker exec $contId mv ./vendor ./vendor.backup
+            docker exec $contId composer install --no-dev --optimize-autoloader
+        long_process_end
+
         long_process_start "Copying app source code files from $PHP_CONTAINER container"
             docker cp $contId:/var/www/html/. ./builds/tmp/
 

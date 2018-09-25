@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 
 source "$ROOT_DIR/utils/index.sh"
-source "$ROOT_DIR/../deploy/config_vars.sh"
 
 declare -a RECIPES
 
-args=$(getopt --long recipe:,image: -o "h:r:i:" -- "$@")
+args=$(getopt --long recipe:,image:,hard -o "h:r:i:" -- "$@")
 
-USER_DIR=$(realpath "$ROOT_DIR/../webmaster-recipes")
+USER_RECIPES_DIR=$(realpath "$ROOT_DIR/../webmaster-recipes")
+
+source "$USER_RECIPES_DIR/config_vars.sh"
+
+HARD_RESTART=
 IMAGE_NAME=
 SUPPORTED_IMAGES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
-RECIPES=($(find "$USER_DIR/" -type f -maxdepth 1  -exec basename {} .sh \;))
+RECIPES=($(find "$USER_RECIPES_DIR/" -maxdepth 1 -type f -exec basename {} .sh \;))
 
 case "$(git_getCurrentBranchName)" in
     staging)
@@ -33,7 +36,7 @@ loadRecipe() {
         error "wrong recipe "$RECIPE" has been specified"
     fi
 
-    source "$USER_DIR/$RECIPE.sh"
+    source "$USER_RECIPES_DIR/$RECIPE.sh"
 }
 
 while [ $# -ge 1 ]; do
@@ -46,7 +49,10 @@ while [ $# -ge 1 ]; do
         --recipe|-r)
             loadRecipe "$2"
         ;;
-        --image:-i)
+        --hard)
+            HARD_RESTART=true
+        ;;
+        --image|-i)
             IMAGE_NAME="$2"
             contains "$IMAGE_NAME" "${SUPPORTED_IMAGES[@]}"
 
@@ -61,7 +67,7 @@ while [ $# -ge 1 ]; do
                 nodejs)
                     NODEJS_SERVICE=true
                 ;;
-                php)
+                php-fpm)
                     PHP_SERVICE=true
                 ;;
                 mongodb)

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null && pwd )"
 
 source "$ROOT_DIR/deploy/__common.sh"
@@ -15,7 +17,7 @@ if [[ ! -f "./builds/$image_name.tar" ]]; then
     error "docker image archive [ $image_archive ] does not exist, run \`build\` command"
 fi
 
-HOSTS="$USER_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
+HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
 
 if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"

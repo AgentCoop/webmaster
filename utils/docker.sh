@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 docker_getDefaultImageContainerName() {
-    echo "$SERVICE_NAME.$SUBSYSTEM.$APP_NAME"
+    echo "$IMAGE_NAME.$RECIPE.$APP_NAME"
 }
 
 docker_getContIdByName() {
@@ -56,17 +56,51 @@ docker_restartContainer() {
     ssh "$remote_host" -i "$ssh_key" "docker restart -t $DOCKER_RESTART_CONTAINER_TIMEOUT $cont_name"
 }
 
+docker_startContainer() {
+    local remote_host="$1"
+    local ssh_key="$2"
+    local cont_name="$3"
+
+    long_process_start "Starting Docker container [ $cont_name ] on the host $remote_host"
+        (
+            ssh -T "$remote_host" -i "$ssh_key" <<EOF
+                cont_id=\$(docker ps -aqf "name=$cont_name")
+                [[ \$cont_id ]] && docker start \$cont_id
+EOF
+        ) > /dev/null
+    long_process_end
+}
+
+docker_stopContainer() {
+    local remote_host="$1"
+    local ssh_key="$2"
+    local cont_name="$3"
+
+    long_process_start "Stopping Docker container [ $cont_name ] on the host $remote_host"
+        (
+            ssh -T "$remote_host" -i "$ssh_key" <<EOF
+                cont_id=\$(docker ps -qf "name=$cont_name")
+                [[ \$cont_id ]] && docker stop -t $DOCKER_STOP_CONTAINER_TIMEOUT \$cont_id
+                :
+EOF
+        ) > /dev/null
+    long_process_end
+}
+
 docker_stopAndRemoveContainer() {
     local remote_host="$1"
     local ssh_key="$2"
     local cont_name="$3"
 
-    ssh -T "$remote_host" -i "$ssh_key" <<EOF
-        cont_id=\$(docker ps -aqf "name=$cont_name")
-        [[ \$cont_id ]] && docker stop -t $DOCKER_STOP_CONTAINER_TIMEOUT \$cont_id && docker rm -f \$cont_id
-        :
+    long_process_start "Stopping and removing Docker container [ $cont_name ] on the host $remote_host"
+        (
+            ssh -T "$remote_host" -i "$ssh_key" <<EOF
+                cont_id=\$(docker ps -aqf "name=$cont_name")
+                [[ ! -z \$cont_id ]] && docker stop \$cont_id && docker rm -f \$cont_id
+                :
 EOF
-
+        ) > /dev/null
+    long_process_end
 }
 
 docker_syncImage() {
@@ -74,10 +108,15 @@ docker_syncImage() {
     local ssh_key="$2"
     local image_name="$3"
 
-    # Just to be sure that all directories, which are about to be mounted by containers, exist
     ( ssh -T "$remote_host" -i "$ssh_key" <<EOF
         mkdir -p $WEB_ROOT
-        mkdir -p $DATA_ROOT
+        mkdir -p $DATA_ROOT/app/public
+        mkdir -p $DATA_ROOT/redis
+        mkdir -p $DATA_ROOT/mongodb
+
+        if ! docker network ls --format {{.Name}} | grep -q $RECIPE-net; then
+            docker network create $RECIPE-net
+        fi
 EOF
     ) > /dev/null
 
@@ -88,15 +127,8 @@ EOF
 
 docker_build() {
     local release_target="$1"
-
-    if [[ ! -z $CONTEXT_DIR ]]; then
-        local context_dir="$CONTEXT_DIR/."
-        local dockerfile="$DOCKER_DIR/$SERVICE_NAME/$release_target/Dockerfile"
-    else
-        local context_dir="$DOCKER_DIR/$SERVICE_NAME/$release_target/."
-        local dockerfile="$DOCKER_DIR/$SERVICE_NAME/$release_target/Dockerfile"
-    fi
-
+    local context_dir="$DOCKER_DIR/$IMAGE_NAME/$release_target/."
+    local dockerfile="$DOCKER_DIR/$IMAGE_NAME/$release_target/Dockerfile"
     local image_name=$(docker_getDefaultImageContainerName)
 
     long_process_start "Building [ $image_name ] image"
@@ -109,41 +141,16 @@ docker_build() {
 docker_startNginx() {
     local remote_host="$1"
     local ssh_key="$2"
-    local name=$(docker_getDefaultImageContainerName)
+    local name="$3"
 
     long_process_start "Starting [ $name ] container on the host $remote_host"
         ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p 443:443 -p 80:80 --name=$name \
             -v /etc/letsencrypt:/etc/letsencrypt \
-            -v $WEB_ROOT/releases/current:/var/www/html \
+            --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
             $NGINX_MOUNTS \
             -e CERTBOT_DOMAINS="$BASE_URL" \
-            --network=$SUBSYSTEM-net \
+            --network=$RECIPE-net \
             $name:latest"
-        ) > /dev/null
-    long_process_end
-}
-
-docker_stopNginx() {
-    local remote_host="$1"
-    local ssh_key="$2"
-    local name=$(docker_getDefaultImageContainerName)
-
-    long_process_start "Stopping and removing $name container on $remote_host"
-        (
-            stop_container "$remote_host" "$ssh_key" "$name"
-        ) > /dev/null
-    long_process_end
-}
-
-docker_restartNginx() {
-    local remote_host="$1"
-    local ssh_key="$2"
-    local name=$(docker_getDefaultImageContainerName)
-
-    long_process_start "Restarting [ $name ] container on $remote_host"
-        (
-            stop_nginx "$remote_host" "$ssh_key"
-            start_nginx "$remote_host" "$ssh_key"
         ) > /dev/null
     long_process_end
 }
@@ -156,7 +163,7 @@ docker_startPostgreSql() {
     long_process_start "Starting [ $name ] container on the host $remote_host"
         ssh -T "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$SUBSYSTEM-net \
+            --network=$RECIPE-net \
             -e POSTGRES_DB=$POSTGRES_DB \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=root \
@@ -165,109 +172,42 @@ docker_startPostgreSql() {
     long_process_end
 }
 
-docker_stopPostgreSql() {
+docker_startRedis() {
     local remote_host="$1"
     local ssh_key="$2"
-    local cont_name="$3"
+    local name="$3"
 
-    long_process_start "Stopping and removing [ $cont_name ] container on the host $remote_host"
-        (
-            stop_container "$remote_host" "$ssh_key" "$cont_name"
-        ) > /dev/null
-    long_process_end
-}
-
-docker_restartPostgreSql() {
-    local remote_host="$1"
-    local ssh_key="$2"
-    local name=$(docker_getDefaultImageContainerName)
-
-    long_process_start "Restarting [ $name ] container on the host $remote_host"
-        (
-            stop_postgresql "$remote_host" "$ssh_key" "$name"
-            start_postgresql "$remote_host" "$ssh_key" "$name"
-        ) > /dev/null
-    long_process_end
-}
-
-start_redis() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Starting $REDIS_CONTAINER container on the host $remote_host"
-        ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$REDIS_CONTAINER \
+    long_process_start "Starting [ $name ] container on the host $remote_host"
+        ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$SUBSYSTEM-net \
-            -v $DATA_ROOT/redis:/data/redis \
-            $REDIS_IMAGE_NAME:latest"
+            --network=$RECIPE-net \
+            --mount type=bind,source=$DATA_ROOT/redis,target=/data/redis \
+            $name:latest"
     long_process_end
 }
 
-stop_redis() {
+docker_startPhpFpm() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name="$3"
 
-    long_process_start "Stopping and removing $REDIS_CONTAINER container on the host $remote_host"
-        (
-            stop_container "$remote_host" "$ssh_key" "$REDIS_CONTAINER"
-        ) > /dev/null
-    long_process_end
-}
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
 
-restart_redis() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $REDIS_CONTAINER container on the host $remote_host"
-        (
-            stop_redis "$remote_host" "$ssh_key" "$REDIS_CONTAINER"
-            start_redis "$remote_host" "$ssh_key" "$REDIS_CONTAINER"
-        ) > /dev/null
-    long_process_end
-}
-
-start_php() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Starting $PHP_CONTAINER container on the host $remote_host"
-
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$PHP_CONTAINER \
-            -v /tmp:/tmp \
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
+            --mount type=bind,source=/tmp,target=/tmp \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
-            --mount type=bind,source=$DATA_ROOT/app/public,target=/var/www/html/storage/app \
-            --mount type=bind,source=$DATA_ROOT/app/system,target=/var/www/html/storage \
-            --network=$SUBSYSTEM-net \
-            $PHP_IMAGE_NAME:latest"
+            $PHP_FPM_MOUNTS \
+            --network=$RECIPE-net \
+            $name:latest"
         ) > /dev/null
 
     long_process_end
 }
 
-stop_php() {
+docker_startElasticsearch() {
     local remote_host="$1"
     local ssh_key="$2"
-
-    long_process_start "Stopping and removing $PHP_CONTAINER container on the host $remote_host"
-    ( stop_container "$remote_host" "$ssh_key" "$PHP_CONTAINER" ) > /dev/null
-    long_process_end
-}
-
-restart_php() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $PHP_CONTAINER container on $remote_host"
-        (
-            stop_php "$remote_host" "$ssh_key" "$PHP_CONTAINER"
-            start_php "$remote_host" "$ssh_key" "$PHP_CONTAINER"
-        ) > /dev/null
-    long_process_end
-}
-
-start_elasticsearch() {
-    local remote_host="$1"
-    local ssh_key="$2"
+    local name="$3"
 
     long_process_start "Starting $ELASTIC_CONTAINER container on the host $remote_host"
         ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$ELASTIC_CONTAINER \
@@ -278,65 +218,22 @@ start_elasticsearch() {
     long_process_end
 }
 
-stop_elasticsearch() {
+docker_startMongoDb() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name="$3"
 
-    long_process_start "Stopping and removing $ELASTIC_CONTAINER container on the host $remote_host"
-        ( stop_container "$remote_host" "$ssh_key" "$ELASTIC_CONTAINER" ) > /dev/null
-    long_process_end
-}
-
-restart_elasticsearch() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $ELASTIC_CONTAINER container on $remote_host"
-        (
-            stop_elasticsearch "$remote_host" "$ssh_key"
-            start_elasticsearch "$remote_host" "$ssh_key"
-        ) > /dev/null
-    long_process_end
-}
-
-start_mongodb() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Starting $MONGODB_CONTAINER container on the host $remote_host"
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$MONGODB_CONTAINER \
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$SUBSYSTEM-net \
-            -v $DATA_ROOT/mongodb:/data/mongodb \
-            $MONGODB_IMAGE_NAME:latest"
+            --network=$RECIPE-net \
+            --mount type=bind,source=$DATA_ROOT/mongodb,target=/data/mongodb \
+            $name:latest"
         ) > /dev/null
     long_process_end
 }
 
-stop_mongodb() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Stopping and removing $MONGODB_CONTAINER container on the host $remote_host"
-        (
-            stop_container "$remote_host" "$ssh_key" "$MONGODB_CONTAINER"
-        ) > /dev/null
-    long_process_end
-}
-
-restart_mongodb() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $MONGODB_CONTAINER container on $remote_host"
-        (
-            stop_mongodb "$remote_host" "$ssh_key"
-            start_mongodb "$remote_host" "$ssh_key"
-        ) > /dev/null
-    long_process_end
-}
-
-start_nodejs() {
+docker_startNodejs() {
     local remote_host="$1"
     local ssh_key="$2"
 
@@ -347,62 +244,6 @@ start_nodejs() {
             $NODEJS_IMAGE_NAME:latest"
         ) > /dev/null
     long_process_end
-}
-
-stop_nodejs() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Stopping and removing $NODEJS_CONTAINER container on the host $remote_host"
-        (
-            stop_container "$remote_host" "$ssh_key" "$NODEJS_CONTAINER"
-        ) > /dev/null
-    long_process_end
-}
-
-restart_nodejs() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    long_process_start "Restarting $NODEJS_CONTAINER container on $remote_host"
-        (
-            stop_nodejs "$remote_host" "$ssh_key"
-            start_nodejs "$remote_host" "$ssh_key"
-        ) > /dev/null
-    long_process_end
-}
-
-restart() {
-    local remote_host="$1"
-    local ssh_key="$2"
-
-    if [[ $NGINX_SERVICE = true ]]; then
-        restart_nginx "$remote_host" "$ssh_key" "$NGINX_IMAGE_NAME"
-    fi
-
-    if [[ $PHP_SERVICE = true ]]; then
-        restart_php "$remote_host" "$ssh_key" "$PHP_IMAGE_NAME"
-    fi
-
-    if [[ $POSTGRES_SERVICE = true ]]; then
-        restart_postgres "$remote_host" "$ssh_key" "$POSTGRES_IMAGE_NAME"
-    fi
-
-    if [[ $REDIS_SERVICE = true ]]; then
-        restart_redis "$remote_host" "$ssh_key" "$REDIS_IMAGE_NAME"
-    fi
-
-    if [[ $ELASTIC_SERVICE = true ]]; then
-        restart_elasticsearch "$remote_host" "$ssh_key" "$ELASTIC_IMAGE_NAME"
-    fi
-
-    if [[ $MONGODB_SERVICE = true ]]; then
-        restart_mongodb "$remote_host" "$ssh_key" "$MONGODB_IMAGE_NAME"
-    fi
-
-    if [[ $NODEJS_SERVICE = true ]]; then
-        restart_nodejs "$remote_host" "$ssh_key" "$NODEJS_IMAGE_NAME"
-    fi
 }
 
 docker_getLastDockerImage() {

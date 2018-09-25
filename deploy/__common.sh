@@ -3,13 +3,14 @@
 source "$ROOT_DIR/utils/index.sh"
 source "$ROOT_DIR/../deploy/config_vars.sh"
 
-declare -a SUBSYSTEMS
+declare -a RECIPES
 
-args=$(getopt --long host:,subsystem: -o "h:s:" -- "$@")
+args=$(getopt --long recipe:,image: -o "h:r:i:" -- "$@")
 
-SERVICE_NAME=
-SUPPORTED_SERVICES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
-SUBSYSTEMS=($(find "$ROOT_DIR/../deploy/subsystem/" -type f  -exec basename {} .sh \;))
+USER_DIR=$(realpath "$ROOT_DIR/../webmaster-recipes")
+IMAGE_NAME=
+SUPPORTED_IMAGES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
+RECIPES=($(find "$USER_DIR/" -type f -maxdepth 1  -exec basename {} .sh \;))
 
 case "$(git_getCurrentBranchName)" in
     staging)
@@ -23,16 +24,16 @@ case "$(git_getCurrentBranchName)" in
     ;;
 esac
 
-load_subsystem_def() {
-    SUBSYSTEM="$1"
+loadRecipe() {
+    RECIPE="$1"
 
-    contains "$SUBSYSTEM" "${SUBSYSTEMS[@]}"
+    contains "$RECIPE" "${RECIPES[@]}"
 
     if [[ $? != 0 ]]; then
-        error "wrong subsystem name "$SUBSYSTEM" has been specified"
+        error "wrong recipe "$RECIPE" has been specified"
     fi
 
-    source "$ROOT_DIR/../deploy/subsystem/$SUBSYSTEM.sh"
+    source "$USER_DIR/$RECIPE.sh"
 }
 
 while [ $# -ge 1 ]; do
@@ -42,15 +43,15 @@ while [ $# -ge 1 ]; do
             shift
             break
            ;;
-        --subsystem)
-            load_subsystem_def "$2"
+        --recipe|-r)
+            loadRecipe "$2"
         ;;
-        -s)
-            SERVICE_NAME="$2"
-            contains "$SERVICE_NAME" "${SUPPORTED_SERVICES[@]}"
+        --image:-i)
+            IMAGE_NAME="$2"
+            contains "$IMAGE_NAME" "${SUPPORTED_IMAGES[@]}"
 
             if [[ $? != 0 ]]; then
-                error "unsupported service $SERVICE_NAME"
+                error "unsupported Docker image $IMAGE_NAME"
             fi
 
             case "$2" in
@@ -85,6 +86,6 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [[ -z $SUBSYSTEM ]]; then
-    error "application subsystem must be specified, --subsystem <NAME>"
+if [[ -z $RECIPE ]]; then
+    error "recipe must be specified, --recipe <NAME>"
 fi

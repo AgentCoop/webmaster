@@ -4,8 +4,8 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null && pwd )"
 
 source "$ROOT_DIR/deploy/__common.sh"
 
-if [[ -z $SERVICE_NAME ]]; then
-    error "service name was not specified"
+if [[ -z $IMAGE_NAME ]]; then
+    error "image name was not specified"
 fi
 
 image_name=$(docker_getDefaultImageContainerName)
@@ -15,7 +15,7 @@ if [[ ! -f "./builds/$image_name.tar" ]]; then
     error "docker image archive [ $image_archive ] does not exist, run \`build\` command"
 fi
 
-HOSTS="$ROOT_DIR/../deploy/hosts/$RELEASE_TARGET/$SUBSYSTEM.txt"
+HOSTS="$USER_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
 
 if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"

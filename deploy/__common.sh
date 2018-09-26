@@ -4,12 +4,13 @@ source "$ROOT_DIR/utils/index.sh"
 
 declare -a RECIPES
 
-args=$(getopt --long recipe:,image:,hard -o "h:r:i:" -- "$@")
+args=$(getopt --long recipe:,image:,hard -o "h:r:i:c:" -- "$@")
 
 USER_RECIPES_DIR=$(realpath "$ROOT_DIR/../webmaster-recipes")
 
-source "$USER_RECIPES_DIR/config_vars.sh"
+source "$USER_RECIPES_DIR/extra/config_vars.sh"
 
+COMMAND=
 HARD_RESTART=
 IMAGE_NAME=
 SUPPORTED_IMAGES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
@@ -51,6 +52,9 @@ while [ $# -ge 1 ]; do
         ;;
         --hard)
             HARD_RESTART=true
+        ;;
+        -c)
+            COMMAND="$2"
         ;;
         --image|-i)
             IMAGE_NAME="$2"

@@ -53,7 +53,7 @@ docker_restartContainer() {
     local ssh_key="$2"
     local cont_name="$3"
 
-    ssh "$remote_host" -i "$ssh_key" "docker restart -t $DOCKER_RESTART_CONTAINER_TIMEOUT $cont_name"
+    ssh "$remote_host" -i "$ssh_key" "docker restart $cont_name"
 }
 
 docker_startContainer() {
@@ -80,7 +80,7 @@ docker_stopContainer() {
         (
             ssh -T "$remote_host" -i "$ssh_key" <<EOF
                 cont_id=\$(docker ps -qf "name=$cont_name")
-                [[ \$cont_id ]] && docker stop -t $DOCKER_STOP_CONTAINER_TIMEOUT \$cont_id
+                [[ \$cont_id ]] && docker stop \$cont_id
                 :
 EOF
         ) > /dev/null
@@ -148,7 +148,7 @@ docker_startNginx() {
             -v /etc/letsencrypt:/etc/letsencrypt \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
             $NGINX_MOUNTS \
-            -e CERTBOT_DOMAINS="$BASE_URL" \
+            -e CERTBOT_DOMAINS=\"$BASE_URL\" \
             --network=$RECIPE-net \
             $name:latest"
         ) > /dev/null

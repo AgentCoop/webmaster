@@ -12,10 +12,34 @@ if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"
 fi
 
+if ! type recipe >/dev/null 2>&1; then
+    error 'nothing to do, define `recipe` function in your recipe'
+fi
+
+# Run a special command instead of recipe
+if [[ ! -z $COMMAND ]]; then
+
+    if ! type $COMMAND >/dev/null 2>&1; then
+        error 'unknown command has been given'
+    fi
+
+    $COMMAND
+
+    exit $?
+fi
+
 ARCHIVE="$RECIPE.$APP_NAME-$(date +%Y-%m-%d@%H_%M).tar.gz"
+
+if type beforeRun >/dev/null 2>&1; then
+    beforeRun
+fi
 
 while IFS=' ' read -r remote_host key || [[ -n "$remote_host" ]] && [[ -n "$key" ]]; do
     recipe "$RELEASE_TARGET" "$remote_host" "~/.ssh/$key" "$ARCHIVE"
 done < "$HOSTS"
+
+if type afterRun >/dev/null 2>&1; then
+    afterRun
+fi
 
 rm -rf ./builds/tarballs/*

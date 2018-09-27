@@ -25,7 +25,7 @@ while IFS=' ' read -r remote_host key || [[ -n "$remote_host" ]] && [[ -n "$key"
         docker_startRedis "$remote_host" "$ssh_key" "$cont_name"
     elif [[ $IMAGE_NAME = 'mongodb' ]]; then
         docker_startMongoDb "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'postgredql' ]]; then
+    elif [[ $IMAGE_NAME = 'postgresql' ]]; then
         docker_startPostgreSql "$remote_host" "$ssh_key" "$cont_name"
     elif [[ $IMAGE_NAME = 'nginx' ]]; then
         docker_startNginx "$remote_host" "$ssh_key" "$cont_name"

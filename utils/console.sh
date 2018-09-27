@@ -20,7 +20,7 @@ long_process_start() {
 
 long_process_end() {
     if [[ $? -eq 0 ]]; then
-        printf "\t[ Step $__step_counter ]\t${GREEN}${bold}Finished${normal}${NC}\n"
+        printf "\t[ Step $__step_counter ]\t${GREEN}${bold}Finished${normal}${NC}\n\n"
     else
         printf "\t[ Step $__step_counter ]\t${RED}Failed${NC}\n"
     fi

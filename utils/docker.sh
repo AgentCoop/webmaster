@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
 docker_getDefaultImageContainerName() {
-    echo "$IMAGE_NAME.$RECIPE.$APP_NAME"
+    if [[ ! -z $1 ]]; then
+        echo "$1.$RECIPE.$APP_NAME"
+    else
+        echo "$IMAGE_NAME.$RECIPE.$APP_NAME"
+    fi
 }
 
 docker_getContIdByName() {
@@ -53,7 +57,11 @@ docker_restartContainer() {
     local ssh_key="$2"
     local cont_name="$3"
 
-    ssh "$remote_host" -i "$ssh_key" "docker restart $cont_name"
+    long_process_start "Restarting Docker container [ $cont_name ] on the host $remote_host"
+        (
+            ssh "$remote_host" -i "$ssh_key" "docker restart $cont_name"
+        ) > /dev/null
+    long_process_end
 }
 
 docker_startContainer() {
@@ -103,6 +111,31 @@ EOF
     long_process_end
 }
 
+docker_hardRestart() {
+    local remote_host="$1"
+    local ssh_key="$2"
+    local image_name="$3"
+    local cont_name=$(docker_getDefaultImageContainerName "$image_name")
+
+    docker_stopAndRemoveContainer "$remote_host" "$ssh_key" "$cont_name"
+
+    if [[ $image_name = 'redis' ]]; then
+        docker_startRedis "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'mongodb' ]]; then
+        docker_startMongoDb "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'postgresql' ]]; then
+        docker_startPostgreSql "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'nginx' ]]; then
+        docker_startNginx "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'nodejs' ]]; then
+        docker_startNodejs "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'php-fpm' ]]; then
+        docker_startPhpFpm "$remote_host" "$ssh_key" "$cont_name"
+    elif [[ $image_name = 'elasticsearch' ]]; then
+        docker_startElasticsearch "$remote_host" "$ssh_key" "$cont_name"
+    fi
+}
+
 docker_syncImage() {
     local remote_host="$1"
     local ssh_key="$2"
@@ -143,7 +176,7 @@ docker_startNginx() {
     local ssh_key="$2"
     local name="$3"
 
-    long_process_start "Starting [ $name ] container on the host $remote_host"
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p 443:443 -p 80:80 --name=$name \
             -v /etc/letsencrypt:/etc/letsencrypt \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
@@ -160,7 +193,7 @@ docker_startPostgreSql() {
     local ssh_key="$2"
     local name="$3"
 
-    long_process_start "Starting [ $name ] container on the host $remote_host"
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ssh -T "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
             --network=$RECIPE-net \
@@ -177,7 +210,7 @@ docker_startRedis() {
     local ssh_key="$2"
     local name="$3"
 
-    long_process_start "Starting [ $name ] container on the host $remote_host"
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
             --network=$RECIPE-net \
@@ -209,11 +242,11 @@ docker_startElasticsearch() {
     local ssh_key="$2"
     local name="$3"
 
-    long_process_start "Starting $ELASTIC_CONTAINER container on the host $remote_host"
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$ELASTIC_CONTAINER \
-            --network=$SUBSYSTEM-net \
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
+            --network=$RECIPE-net \
             -e ES_JAVA_OPTS='-Xms256m -Xmx640m' \
-            $ELASTIC_IMAGE_NAME:latest"
+            $name:latest"
         ) > /dev/null
     long_process_end
 }

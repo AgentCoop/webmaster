@@ -160,7 +160,7 @@ EOF
 
 docker_build() {
     local release_target="$1"
-    local context_dir="$DOCKER_DIR/$IMAGE_NAME/$release_target/."
+    local context_dir=${CONTEXT_DIR:-"$DOCKER_DIR/$IMAGE_NAME/$release_target/."}
     local dockerfile="$DOCKER_DIR/$IMAGE_NAME/$release_target/Dockerfile"
     local image_name=$(docker_getDefaultImageContainerName)
 

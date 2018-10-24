@@ -269,12 +269,15 @@ docker_startMongoDb() {
 docker_startNodejs() {
     local remote_host="$1"
     local ssh_key="$2"
+    local name="$3"
 
-    long_process_start "Starting $NODEJS_CONTAINER container on the host $remote_host"
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p $NODEJS_PORTMAP --name=$NODEJS_CONTAINER \
+    long_process_start "Starting Docker container [ $name ] on the host $remote_host"
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p $NODEJS_PORTMAP --name=$name \
+            -v /etc/letsencrypt:/etc/letsencrypt \
+            --mount type=bind,source=$WEB_ROOT/releases/current,target=/usr/src/app \
             --restart=on-failure:3 \
-            --network=$SUBSYSTEM-net \
-            $NODEJS_IMAGE_NAME:latest"
+            --network=$RECIPE-net \
+            $name:latest"
         ) > /dev/null
     long_process_end
 }

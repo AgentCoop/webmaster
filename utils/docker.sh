@@ -272,11 +272,12 @@ docker_startNodejs() {
     local name="$3"
 
     long_process_start "Starting Docker container [ $name ] on the host $remote_host"
-        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p $NODEJS_PORTMAP --name=$name \
+        ( ssh "$remote_host" -i "$ssh_key" "docker run -d -p 80:80 -p 443:443 --name=$name \
             -v /etc/letsencrypt:/etc/letsencrypt \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/usr/src/app \
             --restart=on-failure:3 \
             --network=$RECIPE-net \
+            -e CERTBOT_DOMAINS=\"$DOMAINS\" \
             $name:latest"
         ) > /dev/null
     long_process_end

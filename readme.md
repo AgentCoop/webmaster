@@ -4,7 +4,7 @@
 </p>
 
 ## Overview
-Webmaster tools is and an old school way to deploy your code to production using Docker containers and Bash scripts.
+Webmaster tools is an old school way to deploy your code to production using Docker containers and Bash scripts.
 
 In a nutshell:
 1. Build your Docker image

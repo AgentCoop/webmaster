@@ -21,7 +21,7 @@ In a nutshell:
 ```bash
 ./webmaster/deploy/run.sh --recipe backend
 ```
-1, 2 items is not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you will need to re-build and reload your Docker images.
+1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 
 ## Installation
 In the root directory of your application run the following commands:

@@ -23,16 +23,16 @@ In a nutshell:
 ```
 
 ## Installation
-In the root directory of your application run the following command:
+In the root directory of your application run the following commands:
 ```bash
-git submodule add https://github.com/AgentCoop/webmaster.git
-mkdir -p webmaster-recipes/hosts/{staging,production}
+$ git submodule add https://github.com/AgentCoop/webmaster.git
+$ mkdir -p webmaster-recipes/hosts/{staging,production}
 ```
 
 ## Deployment
-Every time you want to deploy your code, you switch to either staging or master branch. Everything on staging branch is being deployed to your staging server(s), everything on master - to production one(s), this is quite obvious behavior.
+Every time you want to deploy your code, switch to either staging or master branch. Everything on staging branch is being deployed to your staging server(s), everything on master - to production one(s), this is quite obvious behavior.
 
-webmaster-recipes/hosts/ directory holds files with IP address/SSH-key-name pairs for all of your hosts. For instance, the content of ./webmaster-recipes/hosts/production/backend.txt might look like 23.23.23.23 prod-key, where prod-key is a private SSH key in ~/.ssh/.
+*./webmaster-recipes/hosts/* directory holds files with IP address/SSH-key-name pairs for all of your hosts. For instance, the content of ./webmaster-recipes/hosts/production/backend.txt might look like 23.23.23.23 prod-key, where prod-key is a private SSH key in ~/.ssh/.
 
 A recipe is nothing else than a Bash script containing instruction for deployment. In our example, for the recipe backend, there will be corresponding ./webmaster-recipe/backend.sh script.
 

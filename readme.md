@@ -1,5 +1,5 @@
 <p align="center">
-    <h1>Remember, coder, <span style="color: saddlebrown">Git</pan> is not a deployment tool!</h1>
+    <h1>Remember, coder, <span style="color:saddlebrown">Git</pan> is not a deployment tool!</h1>
     <img width="100%" height="480px" src="https://raw.githubusercontent.com/AgentCoop/webmaster/master/docs/banner.jpg" />
 </p>
 

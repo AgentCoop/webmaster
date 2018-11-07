@@ -21,6 +21,7 @@ In a nutshell:
 ```bash
 ./webmaster/deploy/run.sh --recipe backend
 ```
+1, 2 items is not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you will need to re-build and reload your Docker images.
 
 ## Installation
 In the root directory of your application run the following commands:
@@ -28,6 +29,9 @@ In the root directory of your application run the following commands:
 $ git submodule add https://github.com/AgentCoop/webmaster.git
 $ mkdir -p webmaster-recipes/hosts/{staging,production}
 ```
+
+## Prerequisites
+Remote hosts with Docker Engine installed.
 
 ## Deployment
 Every time you want to deploy your code, switch to either staging or master branch. Everything on staging branch is being deployed to your staging server(s), everything on master - to production one(s), this is quite obvious behavior.

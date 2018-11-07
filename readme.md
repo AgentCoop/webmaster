@@ -1,6 +1,6 @@
 <p align="center">
-    <img width="100%" height="256px" src="https://raw.githubusercontent.com/AgentCoop/webmaster/master/docs/banner.jpg" />
-    <h1>Remember, Git is not a deployment tool</h1>
+    <h1>Remember, coder, Git is not a deployment tool!</h1>
+    <img width="100%" height="480px" src="https://raw.githubusercontent.com/AgentCoop/webmaster/master/docs/banner.jpg" />
 </p>
 
 ## Overview

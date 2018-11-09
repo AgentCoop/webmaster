@@ -4,14 +4,21 @@
 </p>
 
 ## Overview
-Webmaster tools is an old school way to deploy your code to production using Docker containers and Bash scripts.
+Webmaster tools is an old school way to deploy your code to production using Docker containers and Bash scripts. The demo below will show you how to deploy a Laravel application in few commands.
 
-The demo below will show you how to deploy a Laravel application in few commands.
+First, create a test application:
+```bash
+$ mkdir myapp && cd myapp && touch .gitignore && git init && git add . && git commit -m 'First commit'
+$ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/webmaster.git
+$ composer create-project --prefer-dist laravel/laravel webmaster/sandbox/laravel/app
+```
+
+Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: <user>@<ip_address> <ssh-key>, where ssh-key is a SSH private key in ~/.ssh directory.
 
 1. Build required Docker images
 ```bash
-./deploy/build.sh -r laravel-app -i php-fpm --rdir ./sandbox/recipes
-./deploy/build.sh -r laravel-app -i nginx --rdir ./sandbox/recipes
+./webmaster/deploy/build.sh -r laravel-app -i php-fpm --rdir ./sandbox/recipes
+./webmaster/deploy/build.sh -r laravel-app -i nginx --rdir ./sandbox/recipes
 ```
 
 2. Deploy the images to production server
@@ -22,25 +29,24 @@ The demo below will show you how to deploy a Laravel application in few commands
 
 3. Build your app and deploy the code:
 ```bash
-./deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
+./webmaster/deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
 ```
 That's it. Now your Laravel app is up and running. 1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 
 ## Installation
 In the root directory of your application run the following commands:
 ```bash
-$ git submodule add https://github.com/AgentCoop/webmaster.git
-$ mkdir -p webmaster-recipes/hosts/{staging,production}
+$ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/webmaster.git
+$ mkdir -p webmaster-recipes/hosts/{staging,prod}
 ```
+
 ## Prerequisites
-Remote hosts with Docker Engine installed.
+Remote host with Docker Engine installed.
 
 ## Deployment
 Every time you want to deploy your code, switch to either staging or master branch. Everything on staging branch is being deployed to your staging server(s), everything on master - to production one(s), this is quite obvious behavior.
 
-*./webmaster-recipes/hosts/* directory holds files with IP address/SSH-key-name pairs for all of your hosts. For instance, the content of ./webmaster-recipes/hosts/production/backend.txt might look like 23.23.23.23 prod-key, where prod-key is a private SSH key in ~/.ssh/.
-
-A recipe is nothing else than a Bash script containing instruction for deployment. In our example, for the recipe backend, there will be corresponding ./webmaster-recipe/backend.sh script.
+A recipe is nothing else than a Bash script containing instruction for deployment.
 
 A typical recipe looks like:
 ```bash
@@ -48,7 +54,10 @@ A typical recipe looks like:
 
 set -e
 
-DOCKER_DIR=./src/backend/config/docker
+BASE_DIR=./webmaster/sandbox/apps/laravel
+DOCKER_DIR="$BASE_DIR/docker"
+SOURCE_DIR="$BASE_DIR/app"
+DOMAIN_NAMES="laravel-app.webmaster.asamuilik.info"
 
 beforeRun() {
     echo 'before'
@@ -59,6 +68,6 @@ afterRun() {
 }
 
 recipe() {
-    echo 'Do some deployment'
+    echo 'Do some work'
 }
 ```

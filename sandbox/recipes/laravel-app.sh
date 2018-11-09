@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BASE_DIR=./sandbox/apps/laravel
+BASE_DIR=./webmaster/sandbox/apps/laravel
 DOCKER_DIR="$BASE_DIR/docker"
 SOURCE_DIR="$BASE_DIR/app"
 DOMAIN_NAMES="laravel-app.webmaster.asamuilik.info"

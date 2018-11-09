@@ -17,19 +17,19 @@ Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/
 
 1. Build required Docker images
 ```bash
-./webmaster/deploy/build.sh -r laravel-app -i php-fpm --rdir ./sandbox/recipes
-./webmaster/deploy/build.sh -r laravel-app -i nginx --rdir ./sandbox/recipes
+./webmaster/deploy/build.sh -r laravel-app -i php-fpm --rdir ./webmaster/sandbox/recipes/
+./webmaster/deploy/build.sh -r laravel-app -i nginx --rdir ./webmaster/sandbox/recipes/
 ```
 
 2. Deploy the images to production server
 ```bash
-./webmaster/deploy/sync-images.sh --recipe laravel-app -i php-fpm
-./webmaster/deploy/sync-images.sh --recipe laravel-app -i nginx
+./webmaster/deploy/sync-images.sh --recipe laravel-app -i php-fpm --rdir ./webmaster/sandbox/recipes/
+./webmaster/deploy/sync-images.sh --recipe laravel-app -i nginx --rdir ./webmaster/sandbox/recipes/
 ```
 
 3. Build your app and deploy the code:
 ```bash
-./webmaster/deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
+./webmaster/deploy/run.sh -r laravel-app --rdir ./webmaster/sandbox/recipes/
 ```
 Open https://whateveryourdomain.com in the browser. That's it. In less than 10 minutes you will have your Laravel app ready for production use.
 

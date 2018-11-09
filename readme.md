@@ -31,7 +31,9 @@ Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/
 ```bash
 ./webmaster/deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
 ```
-That's it. Now your Laravel app is up and running. 1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
+That's it. In less then 10 minutes you will have your Laravel app ready for production use.
+
+1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 
 ## Installation
 In the root directory of your application run the following commands:
@@ -39,6 +41,8 @@ In the root directory of your application run the following commands:
 $ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/webmaster.git
 $ mkdir -p webmaster-recipes/hosts/{staging,prod}
 ```
+
+*webmaster-recipes* is the default directory for the recipes. Do not forget to add it to your Git repository.
 
 ## Prerequisites
 Remote host with Docker Engine installed.

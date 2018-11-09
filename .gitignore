@@ -1,4 +1,7 @@
 .idea
+builds
+sandbox/recipes/hosts
+sandbox/apps/laravel/app
 /deploy/subsystem/
 !/deploy/hosts/*.example
 config_vars.sh

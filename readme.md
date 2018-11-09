@@ -6,22 +6,25 @@
 ## Overview
 Webmaster tools is an old school way to deploy your code to production using Docker containers and Bash scripts.
 
-In a nutshell:
-1. Build your Docker image
+The demo below will show you how to deploy a Laravel application in few commands.
+
+1. Build required Docker images
 ```bash
-./webmaster/deploy/build.sh --recipe backend -i php-fpm
+./deploy/build.sh -r laravel-app -i php-fpm --rdir ./sandbox/recipes
+./deploy/build.sh -r laravel-app -i nginx --rdir ./sandbox/recipes
 ```
 
-2. Deploy the image to production server
+2. Deploy the images to production server
 ```bash
-./webmaster/deploy/sync-images.sh --recipe backend -i php-fpm
+./webmaster/deploy/sync-images.sh --recipe laravel-app -i php-fpm
+./webmaster/deploy/sync-images.sh --recipe laravel-app -i nginx
 ```
 
 3. Build your app and deploy the code:
 ```bash
-./webmaster/deploy/run.sh --recipe backend
+./deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
 ```
-1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
+That's it. Now your Laravel app is up and running. 1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 
 ## Installation
 In the root directory of your application run the following commands:
@@ -29,7 +32,6 @@ In the root directory of your application run the following commands:
 $ git submodule add https://github.com/AgentCoop/webmaster.git
 $ mkdir -p webmaster-recipes/hosts/{staging,production}
 ```
-
 ## Prerequisites
 Remote hosts with Docker Engine installed.
 

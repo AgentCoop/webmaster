@@ -12,7 +12,7 @@ fi
 
 cont_name=$(docker_getDefaultImageContainerName)
 
-HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
+HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE_NAME.txt"
 
 if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"

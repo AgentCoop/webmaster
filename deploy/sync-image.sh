@@ -17,7 +17,7 @@ if [[ ! -f "./builds/$image_name.tar" ]]; then
     error "docker image archive [ $image_archive ] does not exist, run \`build\` command"
 fi
 
-HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
+HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE_NAME.txt"
 
 if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"

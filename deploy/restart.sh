@@ -12,7 +12,7 @@ fi
 
 cont_name=$(docker_getDefaultImageContainerName)
 
-HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE.txt"
+HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE_NAME.txt"
 
 if [[ ! -f $HOSTS ]]; then
     error "Hosts file $HOSTS does not exist"
@@ -29,7 +29,7 @@ hardRestart() {
         docker_startRedis "$remote_host" "$ssh_key" "$cont_name"
     elif [[ $IMAGE_NAME = 'mongodb' ]]; then
         docker_startMongoDb "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'postgredql' ]]; then
+    elif [[ $IMAGE_NAME = 'postgresql' ]]; then
         docker_startPostgreSql "$remote_host" "$ssh_key" "$cont_name"
     elif [[ $IMAGE_NAME = 'nginx' ]]; then
         docker_startNginx "$remote_host" "$ssh_key" "$cont_name"

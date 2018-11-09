@@ -2,9 +2,9 @@
 
 docker_getDefaultImageContainerName() {
     if [[ ! -z $1 ]]; then
-        echo "$1.$RECIPE.$APP_NAME"
+        echo "$RELEASE_TARGET.$1.$RECIPE_NAME.$APP_NAME"
     else
-        echo "$IMAGE_NAME.$RECIPE.$APP_NAME"
+        echo "$RELEASE_TARGET.$IMAGE_NAME.$RECIPE_NAME.$APP_NAME"
     fi
 }
 
@@ -142,13 +142,14 @@ docker_syncImage() {
     local image_name="$3"
 
     ( ssh -T "$remote_host" -i "$ssh_key" <<EOF
+        mkdir -p /etc/letsencrypt
         mkdir -p $WEB_ROOT
         mkdir -p $DATA_ROOT/app/public
         mkdir -p $DATA_ROOT/redis
         mkdir -p $DATA_ROOT/mongodb
 
-        if ! docker network ls --format {{.Name}} | grep -q $RECIPE-net; then
-            docker network create $RECIPE-net
+        if ! docker network ls --format {{.Name}} | grep -q $RECIPE_NAME-net; then
+            docker network create $RECIPE_NAME-net
         fi
 EOF
     ) > /dev/null
@@ -181,8 +182,9 @@ docker_startNginx() {
             -v /etc/letsencrypt:/etc/letsencrypt \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
             $NGINX_MOUNTS \
-            -e CERTBOT_DOMAINS=\"$BASE_URL\" \
-            --network=$RECIPE-net \
+            -e CERTBOT_DOMAINS=\"$DOMAIN_NAMES\" \
+            -e ADMIN_EMAIL=$ADMIN_EMAIL \
+            --network=$RECIPE_NAME-net \
             $name:latest"
         ) > /dev/null
     long_process_end
@@ -196,7 +198,7 @@ docker_startPostgreSql() {
     long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ssh -T "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             -e POSTGRES_DB=$POSTGRES_DB \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=root \
@@ -213,7 +215,7 @@ docker_startRedis() {
     long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             --mount type=bind,source=$DATA_ROOT/redis,target=/data/redis \
             $name:latest"
     long_process_end
@@ -230,7 +232,7 @@ docker_startPhpFpm() {
             --mount type=bind,source=/tmp,target=/tmp \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
             $PHP_FPM_MOUNTS \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             $name:latest"
         ) > /dev/null
 
@@ -244,7 +246,7 @@ docker_startElasticsearch() {
 
     long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             -e ES_JAVA_OPTS='-Xms256m -Xmx640m' \
             $name:latest"
         ) > /dev/null
@@ -259,7 +261,7 @@ docker_startMongoDb() {
     long_process_start "Starting Docker container [ $name ] on the host $remote_host"
         ( ssh "$remote_host" -i "$ssh_key" "docker run -d --name=$name \
             --restart=on-failure:3 \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             --mount type=bind,source=$DATA_ROOT/mongodb,target=/data/mongodb \
             $name:latest"
         ) > /dev/null
@@ -276,32 +278,9 @@ docker_startNodejs() {
             -v /etc/letsencrypt:/etc/letsencrypt \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/usr/src/app \
             --restart=on-failure:3 \
-            --network=$RECIPE-net \
+            --network=$RECIPE_NAME-net \
             -e CERTBOT_DOMAINS=\"$DOMAINS\" \
             $name:latest"
         ) > /dev/null
     long_process_end
-}
-
-docker_getLastDockerImage() {
-    local remote_host="$1"
-    local pattern="$2"
-
-    ssh "$remote_host" "docker images --format \"table {{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}\" | sort -r -k4 | awk '\$2 ~ /$pattern/ {printf \"%s:%s\n\",\$2,\$3}' | head -n 1"
-}
-
-docker_cleanup() {
-    local remote_host="$1"
-
-    ssh -T "$remote_host" "images=\$(docker images | grep \"^<none>\" | awk \"{print \$3}\"); if [[ \$images ]]; then docker rmi \$images; fi"
-}
-
-docker_removeOldImages() {
-    local remote_host="$1"
-    local pattern="$2"
-
-    ssh "$remote_host" <<EOF
-        image_ids=\$(docker images --format \"table {{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}\" | sort -r -k4 | awk '\$2 ~ /$pattern/ {print \$1}' | awk 'NR > 2 {print \$0}')
-        [[ ! -z \$image_ids ]] && docker rmi \$image_ids
-EOF
 }

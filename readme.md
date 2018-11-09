@@ -31,7 +31,7 @@ Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/
 ```bash
 ./webmaster/deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
 ```
-That's it. In less then 10 minutes you will have your Laravel app ready for production use.
+That's it. In less than 10 minutes you will have your Laravel app ready for production use.
 
 1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 

@@ -13,7 +13,7 @@ $ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/w
 $ composer create-project --prefer-dist laravel/laravel webmaster/sandbox/apps/laravel/app
 ```
 
-Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: user@ip_address ssh-key, where ssh-key is a SSH private key in ~/.ssh directory.
+Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: user@ip_address ssh-key, where ssh-key is a SSH private key in ~/.ssh directory. Specify domain name for your host(s) in *./webmaster/sandbox/recipes/laravel-app.sh*.
 
 1. Build required Docker images
 ```bash
@@ -31,7 +31,7 @@ Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/
 ```bash
 ./webmaster/deploy/run.sh -r laravel-app --rdir ./sandbox/recipes
 ```
-That's it. In less than 10 minutes you will have your Laravel app ready for production use.
+Open https://whateveryourdomain.com in the browser. That's it. In less than 10 minutes you will have your Laravel app ready for production use.
 
 1, 2 items are not something you will often do. Most likely, you will modify your application runtime environment from time to time. That's when you need to re-build and reload your Docker images.
 

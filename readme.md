@@ -13,7 +13,7 @@ $ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/w
 $ composer create-project --prefer-dist laravel/laravel webmaster/sandbox/laravel/app
 ```
 
-Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: <user>@<ip_address> <ssh-key>, where ssh-key is a SSH private key in ~/.ssh directory.
+Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: user@ip_address ssh-key, where ssh-key is a SSH private key in ~/.ssh directory.
 
 1. Build required Docker images
 ```bash

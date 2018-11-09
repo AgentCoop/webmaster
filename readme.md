@@ -10,7 +10,7 @@ First, create a test application:
 ```bash
 $ mkdir myapp && cd myapp && touch .gitignore && git init && git add . && git commit -m 'First commit'
 $ git clone -b 'v0.0.2' --single-branch --depth 1 https://github.com/AgentCoop/webmaster.git
-$ composer create-project --prefer-dist laravel/laravel webmaster/sandbox/laravel/app
+$ composer create-project --prefer-dist laravel/laravel webmaster/sandbox/apps/laravel/app
 ```
 
 Now add SSH credentials for your remote host(s) to *./webmaster/sandbox/recipes/hosts/prod/laravel-app.txt*, the credentials must have the following format: user@ip_address ssh-key, where ssh-key is a SSH private key in ~/.ssh directory.

@@ -13,6 +13,7 @@ RECIPE_NAME=
 USER_RECIPES_DIR=
 HARD_RESTART=
 IMAGE_NAME=
+IMAGE_LABEL=
 SUPPORTED_IMAGES=(nginx php-fpm postgresql mongodb redis elasticsearch nodejs)
 
 case "$(git_getCurrentBranchName)" in
@@ -57,11 +58,11 @@ while [ $# -ge 1 ]; do
             USER_RECIPES_DIR="$(pwd)/$2"
         ;;
         --image|-i)
-            IMAGE_NAME="$2"
-            contains "$IMAGE_NAME" "${SUPPORTED_IMAGES[@]}"
+            IMAGE_LABEL="$2"
+            contains "$IMAGE_LABEL" "${SUPPORTED_IMAGES[@]}"
 
             if [[ $? != 0 ]]; then
-                error "unsupported Docker image $IMAGE_NAME"
+                error "unsupported Docker image $IMAGE_LABEL"
             fi
 
             case "$2" in
@@ -97,7 +98,7 @@ while [ $# -ge 1 ]; do
 done
 
 # Set base recipes directory
-USER_RECIPES_DIR=${USER_RECIPES_DIR:-realpath "$ROOT_DIR/../webmaster-recipes"}
+USER_RECIPES_DIR=${USER_RECIPES_DIR:-$(realpath "$ROOT_DIR/../webmaster-recipes")}
 
 # Scan for available recipes
 RECIPES=($(find "$USER_RECIPES_DIR/" -maxdepth 1 -type f -exec basename {} .sh \;))

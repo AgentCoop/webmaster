@@ -6,11 +6,11 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null && pwd )"
 
 source "$ROOT_DIR/deploy/__common.sh"
 
-if [[ -z $IMAGE_NAME ]]; then
+if [[ -z $IMAGE_LABEL ]]; then
     error "image name was not specified"
 fi
 
-cont_name=$(docker_getDefaultImageContainerName)
+cont_name=$(docker_getContainerName "$IMAGE_LABEL")
 
 HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE_NAME.txt"
 
@@ -19,35 +19,35 @@ if [[ ! -f $HOSTS ]]; then
 fi
 
 hardRestart() {
-    local remote_host="$1"
-    local ssh_key="$2"
-    local cont_name="$3"
+    local remoteHost="$1"
+    local sshKey="$2"
+    local label="$3"
 
-    docker_stopAndRemoveContainer "$remote_host" "$ssh_key" "$cont_name"
+    docker_stopAndRemoveContainer "$remoteHost" "$sshKey" "$label"
 
-    if [[ $IMAGE_NAME = 'redis' ]]; then
-        docker_startRedis "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'mongodb' ]]; then
-        docker_startMongoDb "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'postgresql' ]]; then
-        docker_startPostgreSql "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'nginx' ]]; then
-        docker_startNginx "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'nodejs' ]]; then
-        docker_startNodejs "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'php-fpm' ]]; then
-        docker_startPhpFpm "$remote_host" "$ssh_key" "$cont_name"
-    elif [[ $IMAGE_NAME = 'elasticsearch' ]]; then
-        docker_startElasticsearch "$remote_host" "$ssh_key" "$cont_name"
+    if [[ $label = 'redis' ]]; then
+        docker_startRedis "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'mongodb' ]]; then
+        docker_startMongoDb "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'postgresql' ]]; then
+        docker_startPostgreSql "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'nginx' ]]; then
+        docker_startNginx "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'nodejs' ]]; then
+        docker_startNodejs "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'php-fpm' ]]; then
+        docker_startPhpFpm "$remoteHost" "$sshKey" "$label"
+    elif [[ $label = 'elasticsearch' ]]; then
+        docker_startElasticsearch "$remoteHost" "$sshKey" "$label"
     fi
 }
 
-while IFS=' ' read -r remote_host key || [[ -n "$remote_host" ]] && [[ -n "$key" ]]; do
-    ssh_key="~/.ssh/$key"
+while IFS=' ' read -r remoteHost key || [[ -n "$remoteHost" ]] && [[ -n "$key" ]]; do
+    sshKey="~/.ssh/$key"
 
     if [[ $HARD_RESTART = true ]]; then
-        hardRestart "$remote_host" "$ssh_key" "$cont_name"
+        hardRestart "$remoteHost" "$sshKey" "$IMAGE_LABEL"
     else
-        docker_restartContainer "$remote_host" "$ssh_key" "$cont_name"
+        docker_restartContainer "$remoteHost" "$sshKey" "$IMAGE_LABEL"
     fi
 done < "$HOSTS"

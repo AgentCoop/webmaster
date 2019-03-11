@@ -100,6 +100,10 @@ done
 # Set base recipes directory
 USER_RECIPES_DIR=${USER_RECIPES_DIR:-$(realpath "$ROOT_DIR/../webmaster-recipes")}
 
+if [[ -d "$USER_RECIPES_DIR"/extra ]]; then
+    source "$USER_RECIPES_DIR"/extra/*.sh
+fi
+
 # Scan for available recipes
 RECIPES=($(find "$USER_RECIPES_DIR/" -maxdepth 1 -type f -exec basename {} .sh \;))
 
@@ -108,7 +112,3 @@ if [[ -z $RECIPE_NAME ]]; then
 fi
 
 loadRecipe
-
-if [[ -d "$USER_RECIPES_DIR"/extra ]]; then
-    source "$USER_RECIPES_DIR"/extra/*.sh
-fi

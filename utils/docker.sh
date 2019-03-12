@@ -124,19 +124,19 @@ docker_hardRestart() {
 
     docker_stopAndRemoveContainer "$remoteHost" "$sshKey" "$label"
 
-    if [[ $imageName = 'redis' ]]; then
+    if [[ $label = 'redis' ]]; then
         docker_startRedis "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'mongodb' ]]; then
+    elif [[ $label = 'mongodb' ]]; then
         docker_startMongoDb "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'postgresql' ]]; then
+    elif [[ $label = 'postgresql' ]]; then
         docker_startPostgreSql "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'nginx' ]]; then
+    elif [[ $label = 'nginx' ]]; then
         docker_startNginx "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'nodejs' ]]; then
+    elif [[ $label = 'nodejs' ]]; then
         docker_startNodejs "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'php-fpm' ]]; then
+    elif [[ $label = 'php-fpm' ]]; then
         docker_startPhpFpm "$remoteHost" "$sshKey" "$label"
-    elif [[ $imageName = 'elasticsearch' ]]; then
+    elif [[ $label = 'elasticsearch' ]]; then
         docker_startElasticsearch "$remoteHost" "$sshKey" "$label"
     fi
 }
@@ -210,7 +210,7 @@ docker_startPostgreSql() {
             -e POSTGRES_DB=$POSTGRES_DB \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=root \
-            --mount type=bind,source=$DATA_ROOT/shared,target=/shared \
+            --mount type=bind,source=/shared,target=/shared \
             -v $DATA_ROOT/postgres:/var/lib/postgresql/data \
             $imageName:latest"
     long_process_end

@@ -30,6 +30,17 @@ fi
 
 ARCHIVE="$RECIPE_NAME.$APP_NAME-$(date +%Y-%m-%d@%H_%M).tar.gz"
 
+function cleanup {
+    if [ ! -z $TEMP_CONT_ID ]; then
+        docker stop $TEMP_CONT_ID
+    fi
+
+    rm -rf 2>/dev/null ./builds/tmp/*
+    rm -rf 2>/dev/null ./builds/tmp/.*
+}
+
+trap cleanup EXIT
+
 if type beforeRun >/dev/null 2>&1; then
     beforeRun
 fi
@@ -42,4 +53,4 @@ if type afterRun >/dev/null 2>&1; then
     afterRun
 fi
 
-rm -rf ./builds/tarballs/*
+cleanup

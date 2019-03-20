@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null && pwd )"
 
@@ -19,19 +19,19 @@ fi
 while IFS=' ' read -r remoteHost key || [[ -n "$remoteHost" ]] && [[ -n "$key" ]]; do
     sshKey="~/.ssh/$key"
 
-    if [[ $IMAGE_NAME = 'redis' ]]; then
+    if [[ $IMAGE_LABEL = 'redis' ]]; then
         docker_startRedis "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'mongodb' ]]; then
+    elif [[ $IMAGE_LABEL = 'mongodb' ]]; then
         docker_startMongoDb "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'postgresql' ]]; then
+    elif [[ $IMAGE_LABEL = 'postgresql' ]]; then
         docker_startPostgreSql "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'nginx' ]]; then
+    elif [[ $IMAGE_LABEL = 'nginx' ]]; then
         docker_startNginx "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'nodejs' ]]; then
+    elif [[ $IMAGE_LABEL = 'nodejs' ]]; then
         docker_startNodejs "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'php-fpm' ]]; then
+    elif [[ $IMAGE_LABEL = 'php-fpm' ]]; then
         docker_startPhpFpm "$remoteHost" "$sshKey" "$IMAGE_LABEL"
-    elif [[ $IMAGE_NAME = 'elasticsearch' ]]; then
+    elif [[ $IMAGE_LABEL = 'elasticsearch' ]]; then
         docker_startElasticsearch "$remoteHost" "$sshKey" "$IMAGE_LABEL"
     fi
 done < "$HOSTS"

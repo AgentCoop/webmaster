@@ -150,6 +150,7 @@ docker_syncImage() {
         mkdir -p /etc/letsencrypt
         mkdir -p $WEB_ROOT
         mkdir -p $DATA_ROOT/app/public
+        mkdir -p $DATA_ROOT/app/framework
         mkdir -p $DATA_ROOT/redis
         mkdir -p $DATA_ROOT/mongodb
 
@@ -244,7 +245,7 @@ docker_startPhpFpm() {
         ( ssh "$remoteHost" -i "$sshKey" "docker run -d --name=$contName \
             --mount type=bind,source=/tmp,target=/tmp \
             --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
-            --mount type=bind,source=$DATA_ROOT/shared,target=/shared \
+            --mount type=bind,source=/shared,target=/shared \
             $PHP_FPM_MOUNTS \
             --network=$RECIPE_NAME-net \
             $imageName:latest"

@@ -8,15 +8,7 @@ source "$ROOT_DIR/deploy/__common.sh"
 
 HOSTS="$USER_RECIPES_DIR/hosts/$RELEASE_TARGET/$RECIPE_NAME.txt"
 
-if [[ ! -f $HOSTS ]]; then
-    error "Hosts file $HOSTS does not exist"
-fi
-
-if ! type recipe >/dev/null 2>&1; then
-    error 'nothing to do, define `recipe` function in your recipe'
-fi
-
-# Run a special command instead of recipe
+# Run a command from the given recipe
 if [[ ! -z $COMMAND ]]; then
 
     if ! type $COMMAND >/dev/null 2>&1; then
@@ -26,6 +18,14 @@ if [[ ! -z $COMMAND ]]; then
     $COMMAND
 
     exit $?
+fi
+
+if [[ ! -f $HOSTS ]]; then
+    error "Hosts file $HOSTS does not exist"
+fi
+
+if ! type recipe >/dev/null 2>&1; then
+    error "The given recipe does not define a `recipe` function"
 fi
 
 ARCHIVE="$RECIPE_NAME.$APP_NAME-$(date +%Y-%m-%d@%H_%M).tar.gz"

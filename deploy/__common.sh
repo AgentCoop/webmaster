@@ -24,7 +24,7 @@ case "$(git_getCurrentBranchName)" in
         RELEASE_TARGET=prod
     ;;
     *)
-        error "switch to the right branch to specify the release target"
+        error "Switch to the right branch to specify the release target"
     ;;
 esac
 
@@ -32,7 +32,7 @@ loadRecipe() {
     contains "$RECIPE_NAME" "${RECIPES[@]}"
 
     if [[ $? != 0 ]]; then
-        error "wrong recipe "$RECIPE" has been specified"
+        error "Wrong recipe "$RECIPE" has been specified"
     fi
 
     source "$USER_RECIPES_DIR/$RECIPE_NAME.sh"
@@ -62,7 +62,7 @@ while [ $# -ge 1 ]; do
             contains "$IMAGE_LABEL" "${SUPPORTED_IMAGES[@]}"
 
             if [[ $? != 0 ]]; then
-                error "unsupported Docker image $IMAGE_LABEL"
+                error "Unsupported Docker image $IMAGE_LABEL"
             fi
 
             case "$2" in
@@ -88,7 +88,7 @@ while [ $# -ge 1 ]; do
                     ELASTICSEARCH_SERVICE=true
                 ;;
                 *)
-                    error "unsupported service $2"
+                    error "Unsupported service $2"
                 ;;
             esac
         ;;
@@ -108,7 +108,7 @@ fi
 RECIPES=($(find "$USER_RECIPES_DIR/" -maxdepth 1 -type f -exec basename {} .sh \;))
 
 if [[ -z $RECIPE_NAME ]]; then
-    error "recipe must be specified, --recipe <NAME>"
+    error "Recipe must be specified, --recipe <NAME>"
 fi
 
 loadRecipe

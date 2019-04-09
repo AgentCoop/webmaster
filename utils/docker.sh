@@ -147,12 +147,17 @@ docker_syncImage() {
     local imageName="$3"
 
     ( ssh -T "$remoteHost" -i "$sshKey" <<EOF
+        mkdir -p /shared
         mkdir -p /etc/letsencrypt
-        mkdir -p $WEB_ROOT
-        mkdir -p $DATA_ROOT/app/public
-        mkdir -p $DATA_ROOT/app/framework
-        mkdir -p $DATA_ROOT/redis
-        mkdir -p $DATA_ROOT/mongodb
+        mkdir -p $DATA_ROOT/public
+        mkdir -p $DATA_ROOT/system/framework/cache
+        mkdir -p $DATA_ROOT/system/framework/views
+        mkdir -p $DATA_ROOT/system/framework/sessions
+        mkdir -p $APP_ROOT/redis
+        mkdir -p $APP_ROOT/mongodb
+        mkdir -p $APP_ROOT/postgres
+        mkdir -p $APP_ROOT/releases
+        mkdir -p $APP_ROOT/archives
 
         if ! docker network ls --format {{.Name}} | grep -q $RECIPE_NAME-net; then
             docker network create $RECIPE_NAME-net
@@ -188,7 +193,7 @@ docker_startNginx() {
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
         ( ssh "$remoteHost" -i "$sshKey" "docker run -d -p 443:443 -p 80:80 --name=$contName \
             -v /etc/letsencrypt:/etc/letsencrypt \
-            --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
+            --mount type=bind,source=$APP_ROOT/releases/current,target=/var/www/html \
             $NGINX_MOUNTS \
             -e CERTBOT_DOMAINS=\"$DOMAIN_NAMES\" \
             -e ADMIN_EMAIL=$ADMIN_EMAIL \
@@ -201,18 +206,19 @@ docker_startNginx() {
 docker_startPostgreSql() {
     local remoteHost="$1"
     local sshKey="$2"
+    local label="$3"
     local imageName=$(docker_getImageName "$label")
     local contName=$(docker_getContainerName "$label")
 
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
         ssh -T "$remoteHost" -i "$sshKey" "docker run -d --name=$contName \
-            --restart=on-failure:3 \
+            --restart=always \
             --network=$RECIPE_NAME-net \
             -e POSTGRES_DB=$POSTGRES_DB \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=root \
             --mount type=bind,source=/shared,target=/shared \
-            -v $DATA_ROOT/postgres:/var/lib/postgresql/data \
+            -v $APP_ROOT/postgres:/var/lib/postgresql/data \
             $imageName:latest"
     long_process_end
 }
@@ -226,9 +232,9 @@ docker_startRedis() {
 
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
         ssh "$remoteHost" -i "$sshKey" "docker run -d --name=$contName \
-            --restart=on-failure:3 \
+            --restart=always \
             --network=$RECIPE_NAME-net \
-            --mount type=bind,source=$DATA_ROOT/redis,target=/data/redis \
+            --mount type=bind,source=$APP_ROOT/redis,target=/data/redis \
             $imageName:latest"
     long_process_end
 }
@@ -243,8 +249,9 @@ docker_startPhpFpm() {
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
 
         ( ssh "$remoteHost" -i "$sshKey" "docker run -d --name=$contName \
+            --restart=always \
             --mount type=bind,source=/tmp,target=/tmp \
-            --mount type=bind,source=$WEB_ROOT/releases/current,target=/var/www/html \
+            --mount type=bind,source=$APP_ROOT/releases/current,target=/var/www/html \
             --mount type=bind,source=/shared,target=/shared \
             $PHP_FPM_MOUNTS \
             --network=$RECIPE_NAME-net \
@@ -279,9 +286,9 @@ docker_startMongoDb() {
 
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
         ( ssh "$remoteHost" -i "$sshKey" "docker run -d --name=$contName \
-            --restart=on-failure:3 \
+            --restart=always \
             --network=$RECIPE_NAME-net \
-            --mount type=bind,source=$DATA_ROOT/mongodb,target=/data/mongodb \
+            --mount type=bind,source=$APP_ROOT/mongodb,target=/data/mongodb \
             $imageName:latest"
         ) > /dev/null
     long_process_end
@@ -297,8 +304,8 @@ docker_startNodejs() {
     long_process_start "Starting Docker container [ $contName ] on the host $remoteHost"
         ( ssh "$remoteHost" -i "$sshKey" "docker run -d -p 80:80 -p 443:443 --name=$contName \
             -v /etc/letsencrypt:/etc/letsencrypt \
-            --mount type=bind,source=$WEB_ROOT/releases/current,target=/usr/src/app \
-            --restart=on-failure:3 \
+            --mount type=bind,source=$APP_ROOT/releases/current,target=/usr/src/app \
+            --restart=always \
             --network=$RECIPE_NAME-net \
             -e CERTBOT_DOMAINS=\"$DOMAINS\" \
             $imageName:latest"

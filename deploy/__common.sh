@@ -21,7 +21,7 @@ case "$(git_getCurrentBranchName)" in
         RELEASE_TARGET=staging
     ;;
     master)
-        RELEASE_TARGET=prod
+        RELEASE_TARGET=production
     ;;
     *)
         error "Switch to the right branch to specify the release target"
